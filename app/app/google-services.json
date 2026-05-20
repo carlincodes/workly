@@ -1,13 +1,13 @@
-{
+ {
   "project_info": {
-    "project_number": "248628436158",
-    "project_id": "workly-51e1d",
-    "storage_bucket": "workly-51e1d.firebasestorage.app"
+    "project_number": "488859123919",
+    "project_id": "workly-a1d4c",
+    "storage_bucket": "workly-a1d4c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:248628436158:android:1c3db3339cdef574fa92ef",
+        "mobilesdk_app_id": "1:488859123919:android:2d5729d032befdcab737ba",
         "android_client_info": {
           "package_name": "com.example.workly"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDmpa3cxQjzYxNngVblvnmMafA0ieHkc5U"
+          "current_key": "AIzaSyDus66CGp282r52p_tSs84bakAqmpGIfSU"
         }
       ],
       "services": {
