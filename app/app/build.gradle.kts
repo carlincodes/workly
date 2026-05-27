@@ -58,6 +58,10 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth)
     implementation(libs.google.firebase.firestore)
+    implementation(libs.firebase.storage)
+
+    implementation(libs.google.maps)
+    implementation(libs.maps.compose)
 
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
