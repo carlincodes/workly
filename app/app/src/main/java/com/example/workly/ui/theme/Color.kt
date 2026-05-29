@@ -16,9 +16,11 @@ val TertiaryLight = Color(0xFF60A5FA)
 val DarkBackground = Color(0xFF0F172A)
 val DarkSurface = Color(0xFF1E293B)
 
-val LightBackground = Color(0xFFF8FAFC)
+val LightBackground = Color(0xFFFFFFFF)
 val LightSurface = Color(0xFFFFFFFF)
 
-// Text Colors
-val TextLight = Color(0xFF000000)
-val TextDark = Color(0xFFEFEFEF)
+val OnSurfaceLight = Color(0xFF000000)
+val OnSurfaceDark = Color(0xFF39A1FC)
+
+val OnPrimaryLight = Color(0xFFFFFFFF)
+val OnPrimaryDark = Color(0xFFFFFFFF)

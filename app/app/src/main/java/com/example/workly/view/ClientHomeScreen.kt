@@ -4,10 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Map
@@ -226,16 +222,12 @@ fun ClientHomeScreen(navController: NavController) {
 
                                     Button(
                                         onClick = {
-                                            scope.launch {
-                                                val updated = service.copy(
-                                                    status = if (service.status == "OPEN") "IN_PROGRESS" else "CLOSED"
-                                                )
-                                                repository.updateService(updated)
-                                                loadData()
-                                            }
+                                            navController.navigate(
+                                                "edit_service/${service.id}"
+                                            )
                                         }
                                     ) {
-                                        Text(if (service.status == "OPEN") "Iniciar" else "Concluir")
+                                        Text("Editar")
                                     }
                                 }
                             }

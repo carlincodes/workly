@@ -19,12 +19,12 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBackground,
     surface = DarkSurface,
 
-    onPrimary = TextDark,
-    onSecondary = TextDark,
-    onTertiary = TextDark,
+    onPrimary = OnPrimaryDark,
+    onSecondary = OnPrimaryDark,
+    onTertiary = OnPrimaryDark,
 
-    onBackground = TextDark,
-    onSurface = TextDark
+    onBackground = OnSurfaceDark,
+    onSurface = OnSurfaceDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -36,17 +36,19 @@ private val LightColorScheme = lightColorScheme(
     background = LightBackground,
     surface = LightSurface,
 
-    onPrimary = TextLight,
-    onSecondary = TextLight,
-    onTertiary = TextLight,
+    onPrimary = OnPrimaryLight,
+    onSecondary = OnPrimaryLight,
+    onTertiary = OnPrimaryLight,
 
-    onBackground = TextLight,
-    onSurface = TextLight
+    onBackground = OnSurfaceLight,
+    onSurface = OnSurfaceLight
 )
 
 @Composable
 fun WorklyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+
+    // Mantém sempre tema claro
+    darkTheme: Boolean = false,
 
     // Dynamic color disponível no Android 12+
     dynamicColor: Boolean = false,
@@ -56,7 +58,9 @@ fun WorklyTheme(
 
     val colorScheme = when {
 
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        dynamicColor &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+
             val context = LocalContext.current
 
             if (darkTheme) {
