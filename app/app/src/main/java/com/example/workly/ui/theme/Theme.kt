@@ -1,7 +1,6 @@
 package com.example.workly.ui.theme
 
 import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -47,10 +46,8 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun WorklyTheme(
 
-    // Mantém sempre tema claro
     darkTheme: Boolean = false,
 
-    // Dynamic color disponível no Android 12+
     dynamicColor: Boolean = false,
 
     content: @Composable () -> Unit
