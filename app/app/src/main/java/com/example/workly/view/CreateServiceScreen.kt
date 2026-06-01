@@ -24,12 +24,14 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateServiceScreen(navController: NavController) {
+fun CreateServiceScreen(navController: NavController, serviceId: String? = null) {
 
+    // 1. Estados da tela organizados no topo
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var cep by remember { mutableStateOf("") }
     var addressInfo by remember { mutableStateOf("") }
+
     var jobTypeExpanded by remember { mutableStateOf(false) }
     var selectedJobType by remember { mutableStateOf("Eletricista") }
     var isSaving by remember { mutableStateOf(false) }
@@ -38,6 +40,24 @@ fun CreateServiceScreen(navController: NavController) {
     val repository = remember { ServiceRepository() }
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+
+    // 2. Carrega os dados de forma totalmente segura contra crash
+    LaunchedEffect(serviceId) {
+        if (!serviceId.isNullOrEmpty()) {
+            try {
+                // Busca de forma isolada para evitar sobrecarga na thread principal
+                val existingService = repository.getServiceById(serviceId)
+                if (existingService != null) {
+                    title = existingService.title.orEmpty()
+                    description = existingService.description.orEmpty()
+                    selectedJobType = if (existingService.jobType.isNotEmpty()) existingService.jobType else "Eletricista"
+                }
+            } catch (e: Exception) {
+                // Evita que o app feche se houver erro de conversão de dados do Firebase
+                Toast.makeText(context, "Aviso: Carregando dados de formulário limpo.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val jobTypes = listOf(
         "Eletricista",
@@ -52,7 +72,7 @@ fun CreateServiceScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Criar Serviço") },
+                title = { Text(if (!serviceId.isNullOrEmpty()) "Editar Serviço" else "Criar Serviço") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -112,6 +132,7 @@ fun CreateServiceScreen(navController: NavController) {
                 }
             }
 
+            // Consumo da API REST do ViaCEP com Retrofit (Requisito de PDM)
             OutlinedTextField(
                 value = cep,
                 onValueChange = { cep = it },
@@ -122,12 +143,16 @@ fun CreateServiceScreen(navController: NavController) {
                     IconButton(onClick = {
                         scope.launch {
                             try {
-                                if (cep.length == 8) {
-                                    val response = RetrofitClient.viaCepService.getAddress(cep)
+                                val limpandoCep = cep.replace("-", "").trim()
+                                if (limpandoCep.length == 8) {
+                                    val response = RetrofitClient.viaCepService.getAddress(limpandoCep)
                                     addressInfo = "${response.logradouro}, ${response.bairro}, ${response.localidade}-${response.uf}"
+                                    Toast.makeText(context, "Endereço localizado!", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Insira um CEP válido com 8 dígitos", Toast.LENGTH_SHORT).show()
                                 }
                             } catch (e: Exception) {
-                                addressInfo = "Erro ao buscar CEP"
+                                Toast.makeText(context, "Erro ao buscar CEP", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }) {
@@ -140,7 +165,8 @@ fun CreateServiceScreen(navController: NavController) {
                 Text(
                     text = addressInfo,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -170,25 +196,33 @@ fun CreateServiceScreen(navController: NavController) {
                         if (!isSaving) {
                             isSaving = true
                             scope.launch {
-                                val fullDescription = if (addressInfo.isNotEmpty()) 
-                                    "$description \nLocal: $addressInfo" 
-                                else description
+                                try {
+                                    val finalId = serviceId ?: ""
 
-                                val newService = Service(
-                                    title = title,
-                                    description = fullDescription,
-                                    jobType = selectedJobType,
-                                    clientId = "user_anonimo"
-                                )
-                                
-                                val success = repository.createService(newService)
-                                isSaving = false
-                                
-                                if (success) {
+                                    val fullDescription = if (addressInfo.isNotEmpty() && !description.contains("Local:"))
+                                        "$description \nLocal: $addressInfo"
+                                    else description
+
+                                    val serviceData = Service(
+                                        id = finalId,
+                                        title = title,
+                                        description = fullDescription,
+                                        jobType = selectedJobType,
+                                        clientId = "user_anonimo"
+                                    )
+
+                                    if (!serviceId.isNullOrEmpty()) {
+                                        repository.updateService(serviceData)
+                                    } else {
+                                        repository.createService(serviceData)
+                                    }
+
                                     Toast.makeText(context, "Serviço salvo com sucesso!", Toast.LENGTH_SHORT).show()
                                     navController.popBackStack()
-                                } else {
-                                    Toast.makeText(context, "Erro ao salvar. Verifique sua conexão.", Toast.LENGTH_LONG).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Erro ao atualizar os dados.", Toast.LENGTH_SHORT).show()
+                                } finally {
+                                    isSaving = false
                                 }
                             }
                         }

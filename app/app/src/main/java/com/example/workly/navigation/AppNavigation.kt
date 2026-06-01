@@ -42,8 +42,16 @@ fun AppNavigation() {
             ProviderHomeScreen(navController)
         }
 
-        composable("create_service") {
-            CreateServiceScreen(navController)
+        composable(
+            route = "create_service?serviceId={serviceId}",
+            arguments = listOf(navArgument("serviceId") {
+                nullable = true
+                defaultValue = null
+                type = NavType.StringType
+            })
+        ) { backStackEntry ->
+            val serviceId = backStackEntry.arguments?.getString("serviceId")
+            CreateServiceScreen(navController = navController, serviceId = serviceId)
         }
 
         composable("profile") {

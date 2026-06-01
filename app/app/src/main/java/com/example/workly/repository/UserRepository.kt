@@ -24,4 +24,19 @@ class UserRepository {
             usersCollection.document(user.id).set(user).await()
         }
     }
+
+    // Função de atualização (U do CRUD) ajustada para o seu padrão
+    suspend fun updateUser(user: User): Boolean {
+        return try {
+            if (user.id.isNotEmpty()) {
+                usersCollection.document(user.id).set(user).await()
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreError", "Erro ao atualizar perfil", e)
+            false
+        }
+    }
 }

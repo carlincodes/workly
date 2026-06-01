@@ -440,10 +440,10 @@ fun ClientHomeScreen(navController: NavController) {
                                     Button(
 
                                         onClick = {
-
-                                            navController.navigate(
-                                                "edit_service/${service.id}"
-                                            )
+                                            val safeId = service.id.trim()
+                                            if (safeId.isNotEmpty()) {
+                                                navController.navigate("create_service?serviceId=$safeId")
+                                            }
                                         },
 
                                         colors = ButtonDefaults.buttonColors(

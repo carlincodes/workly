@@ -30,6 +30,16 @@ class ServiceRepository {
         }
     }
 
+    suspend fun getServiceById(serviceId: String): Service? {
+        return try {
+            val document = servicesCollection.document(serviceId).get().await()
+            document.toObject(Service::class.java)
+        } catch (e: Exception) {
+            Log.e("FirestoreError", "Erro ao buscar serviço por ID", e)
+            null
+        }
+    }
+
     suspend fun updateService(service: Service) {
         if (service.id.isNotEmpty()) {
             servicesCollection.document(service.id).set(service).await()
