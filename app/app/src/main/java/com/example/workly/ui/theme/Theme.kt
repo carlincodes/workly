@@ -1,6 +1,7 @@
 package com.example.workly.ui.theme
 
 import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -18,12 +19,12 @@ private val DarkColorScheme = darkColorScheme(
     background = DarkBackground,
     surface = DarkSurface,
 
-    onPrimary = OnPrimaryDark,
-    onSecondary = OnPrimaryDark,
-    onTertiary = OnPrimaryDark,
+    onPrimary = TextDark,
+    onSecondary = TextDark,
+    onTertiary = TextDark,
 
-    onBackground = OnSurfaceDark,
-    onSurface = OnSurfaceDark
+    onBackground = TextDark,
+    onSurface = TextDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -35,19 +36,19 @@ private val LightColorScheme = lightColorScheme(
     background = LightBackground,
     surface = LightSurface,
 
-    onPrimary = OnPrimaryLight,
-    onSecondary = OnPrimaryLight,
-    onTertiary = OnPrimaryLight,
+    onPrimary = TextLight,
+    onSecondary = TextLight,
+    onTertiary = TextLight,
 
-    onBackground = OnSurfaceLight,
-    onSurface = OnSurfaceLight
+    onBackground = TextLight,
+    onSurface = TextLight
 )
 
 @Composable
 fun WorklyTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
 
-    darkTheme: Boolean = false,
-
+                                              
     dynamicColor: Boolean = false,
 
     content: @Composable () -> Unit
@@ -55,9 +56,7 @@ fun WorklyTheme(
 
     val colorScheme = when {
 
-        dynamicColor &&
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
 
             if (darkTheme) {

@@ -1,6 +1,7 @@
 package com.example.workly.repository
 
-import com.example.workly.model.Message
+import com.example.workly.model.ChatMessage
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.channels.awaitClose
@@ -9,23 +10,49 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 
 class ChatRepository {
-    private val firestore = FirebaseFirestore.getInstance()
-    private val chatsCollection = firestore.collection("chats")
+    private val db = FirebaseFirestore.getInstance()
+    private val auth = FirebaseAuth.getInstance()
+    private val chatCollection = db.collection("chat_messages")
 
-    fun getMessages(chatId: String): Flow<List<Message>> = callbackFlow {
-        val listener = chatsCollection.document(chatId).collection("messages")
+    fun getChatMessages(): Flow<List<ChatMessage>> = callbackFlow {
+        val listener = chatCollection
             .orderBy("timestamp", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
-                if (error != null) return@addSnapshotListener
-                if (snapshot != null) {
-                    val messages = snapshot.toObjects(Message::class.java)
-                    trySend(messages)
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
                 }
+
+                val messages = snapshot?.documents
+                    ?.mapNotNull { doc ->
+                        ChatMessage(
+                            id = doc.id,
+                            senderId = doc.getString("senderId") ?: "",
+                            senderName = doc.getString("senderName") ?: "Anônimo",
+                            text = doc.getString("text") ?: "",
+                            timestamp = doc.getLong("timestamp") ?: 0L
+                        )
+                    } ?: emptyList()
+                trySend(messages)
             }
+
         awaitClose { listener.remove() }
     }
 
-    suspend fun sendMessage(chatId: String, message: Message) {
-        chatsCollection.document(chatId).collection("messages").add(message).await()
+    suspend fun sendMessage(text: String, senderName: String): Boolean {
+        return try {
+            val userId = auth.currentUser?.uid ?: return false
+            val message = mapOf(
+                "senderId" to userId,
+                "senderName" to senderName.ifBlank { "Usuário" },
+                "text" to text,
+                "timestamp" to System.currentTimeMillis()
+            )
+            chatCollection.add(message).await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 }

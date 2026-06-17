@@ -1,11 +1,10 @@
 package com.example.workly.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import com.example.workly.view.ApiServicesScreen
 import com.example.workly.view.ChatScreen
 import com.example.workly.view.ClientHomeScreen
 import com.example.workly.view.ClientProfileScreen
@@ -14,6 +13,8 @@ import com.example.workly.view.LoginScreen
 import com.example.workly.view.MapScreen
 import com.example.workly.view.ProfileScreen
 import com.example.workly.view.ProviderHomeScreen
+import com.example.workly.view.ServiceManagementScreen
+import com.example.workly.view.ServiceDetailScreen
 import com.example.workly.view.SignupScreen
 
 @Composable
@@ -42,16 +43,31 @@ fun AppNavigation() {
             ProviderHomeScreen(navController)
         }
 
-        composable(
-            route = "create_service?serviceId={serviceId}",
-            arguments = listOf(navArgument("serviceId") {
-                nullable = true
-                defaultValue = null
-                type = NavType.StringType
-            })
-        ) { backStackEntry ->
-            val serviceId = backStackEntry.arguments?.getString("serviceId")
-            CreateServiceScreen(navController = navController, serviceId = serviceId)
+        composable("api_services") {
+            ApiServicesScreen(navController)
+        }
+
+        composable("service_management") {
+            ServiceManagementScreen(navController)
+        }
+
+        composable("service_detail/{role}/{category}/{title}?description={description}") { backStackEntry ->
+            val role = backStackEntry.arguments?.getString("role")
+            val category = backStackEntry.arguments?.getString("category")
+            val title = backStackEntry.arguments?.getString("title")
+            val description = backStackEntry.arguments?.getString("description")
+
+            ServiceDetailScreen(
+                navController = navController,
+                role = role,
+                category = category,
+                title = title,
+                description = description
+            )
+        }
+
+        composable("create_service") {
+            CreateServiceScreen(navController)
         }
 
         composable("profile") {
@@ -66,12 +82,8 @@ fun AppNavigation() {
             MapScreen(navController)
         }
 
-        composable(
-            "chat/{chatId}",
-            arguments = listOf(navArgument("chatId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
-            ChatScreen(navController, chatId)
+        composable("chat") {
+            ChatScreen(navController)
         }
     }
 }

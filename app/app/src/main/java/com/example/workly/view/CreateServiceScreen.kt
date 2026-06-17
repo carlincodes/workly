@@ -3,61 +3,38 @@ package com.example.workly.view
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material3.DropdownMenuItem
-import android.widget.Toast
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
+import androidx.navigation.NavController
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.example.workly.model.Service
-import com.example.workly.network.RetrofitClient
-import com.example.workly.repository.ServiceRepository
-import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.example.workly.model.ServiceItem
+import com.example.workly.viewmodel.ServiceViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateServiceScreen(navController: NavController, serviceId: String? = null) {
-
-    // 1. Estados da tela organizados no topo
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var cep by remember { mutableStateOf("") }
-    var addressInfo by remember { mutableStateOf("") }
-
-    var jobTypeExpanded by remember { mutableStateOf(false) }
-    var selectedJobType by remember { mutableStateOf("Eletricista") }
-    var isSaving by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
-    val repository = remember { ServiceRepository() }
-    val scrollState = rememberScrollState()
+fun CreateServiceScreen(navController: NavController) {
+    val viewModel: ServiceViewModel = viewModel()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
     val context = LocalContext.current
 
-    // 2. Carrega os dados de forma totalmente segura contra crash
-    LaunchedEffect(serviceId) {
-        if (!serviceId.isNullOrEmpty()) {
-            try {
-                // Busca de forma isolada para evitar sobrecarga na thread principal
-                val existingService = repository.getServiceById(serviceId)
-                if (existingService != null) {
-                    title = existingService.title.orEmpty()
-                    description = existingService.description.orEmpty()
-                    selectedJobType = if (existingService.jobType.isNotEmpty()) existingService.jobType else "Eletricista"
-                }
-            } catch (e: Exception) {
-                // Evita que o app feche se houver erro de conversão de dados do Firebase
-                Toast.makeText(context, "Aviso: Carregando dados de formulário limpo.", Toast.LENGTH_SHORT).show()
-            }
+    LaunchedEffect(errorMessage) {
+        errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
         }
     }
+
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var jobTypeExpanded by remember { mutableStateOf(false) }
+    var selectedJobType by remember { mutableStateOf("Eletricista") }                 
 
     val jobTypes = listOf(
         "Eletricista",
@@ -69,176 +46,106 @@ fun CreateServiceScreen(navController: NavController, serviceId: String? = null)
         "Outro"
     )
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(if (!serviceId.isNullOrEmpty()) "Editar Serviço" else "Criar Serviço") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Voltar"
-                        )
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .padding(top = 50.dp),
+
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+
+        Text(
+            "Criar Serviço",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text("Título do serviço") },
+            placeholder = { Text("Ex: Troca de chuveiro") },
             modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .fillMaxWidth()
+                .padding(top = 4.dp),
+            singleLine = true
+        )
+
+        ExposedDropdownMenuBox(
+            expanded = jobTypeExpanded,
+            onExpandedChange = { jobTypeExpanded = it },
+            modifier = Modifier.fillMaxWidth()
         ) {
-
             OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("Título do serviço") },
-                placeholder = { Text("Ex: Troca de chuveiro") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                readOnly = true,
+                value = selectedJobType,
+                onValueChange = {},
+                label = { Text("Tipo de profissional") },
+                modifier = Modifier.menuAnchor()
             )
-
-            ExposedDropdownMenuBox(
+            ExposedDropdownMenu(
                 expanded = jobTypeExpanded,
-                onExpandedChange = { jobTypeExpanded = it },
-                modifier = Modifier.fillMaxWidth()
+                onDismissRequest = { jobTypeExpanded = false }
             ) {
-                OutlinedTextField(
-                    readOnly = true,
-                    value = selectedJobType,
-                    onValueChange = {},
-                    label = { Text("Tipo de profissional") },
-                    modifier = Modifier.menuAnchor(),
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = jobTypeExpanded) }
-                )
-                ExposedDropdownMenu(
-                    expanded = jobTypeExpanded,
-                    onDismissRequest = { jobTypeExpanded = false }
-                ) {
-                    jobTypes.forEach { type ->
-                        DropdownMenuItem(
-                            text = { Text(type) },
-                            onClick = {
-                                selectedJobType = type
-                                jobTypeExpanded = false
-                            }
-                        )
-                    }
+                jobTypes.forEach { type ->
+                    DropdownMenuItem(
+                        text = { Text(type) },
+                        onClick = {
+                            selectedJobType = type
+                            jobTypeExpanded = false
+                        }
+                    )
                 }
             }
+        }
 
-            // Consumo da API REST do ViaCEP com Retrofit (Requisito de PDM)
-            OutlinedTextField(
-                value = cep,
-                onValueChange = { cep = it },
-                label = { Text("CEP (Opcional)") },
-                placeholder = { Text("Ex: 01001000") },
-                modifier = Modifier.fillMaxWidth(),
-                trailingIcon = {
-                    IconButton(onClick = {
-                        scope.launch {
-                            try {
-                                val limpandoCep = cep.replace("-", "").trim()
-                                if (limpandoCep.length == 8) {
-                                    val response = RetrofitClient.viaCepService.getAddress(limpandoCep)
-                                    addressInfo = "${response.logradouro}, ${response.bairro}, ${response.localidade}-${response.uf}"
-                                    Toast.makeText(context, "Endereço localizado!", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Insira um CEP válido com 8 dígitos", Toast.LENGTH_SHORT).show()
-                                }
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "Erro ao buscar CEP", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }) {
-                        Icon(Icons.Default.Search, contentDescription = "Buscar CEP")
-                    }
+        OutlinedTextField(
+            value = description,
+            onValueChange = { description = it },
+            label = { Text("Descrição") },
+            placeholder = { Text("Detalhes do serviço, local, urgência...") },
+            modifier = Modifier
+                .fillMaxWidth(),
+            maxLines = 5
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OutlinedButton(
+                onClick = {
+                    navController.popBackStack()
                 }
-            )
-
-            if (addressInfo.isNotEmpty()) {
-                Text(
-                    text = addressInfo,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            OutlinedTextField(
-                value = description,
-                onValueChange = { description = it },
-                label = { Text("Descrição") },
-                placeholder = { Text("Detalhes do serviço, local, urgência...") },
-                modifier = Modifier.fillMaxWidth(),
-                maxLines = 5
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
             ) {
-                OutlinedButton(
-                    onClick = { navController.popBackStack() }
-                ) {
-                    Text("Cancelar")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        if (!isSaving) {
-                            isSaving = true
-                            scope.launch {
-                                try {
-                                    val finalId = serviceId ?: ""
-
-                                    val fullDescription = if (addressInfo.isNotEmpty() && !description.contains("Local:"))
-                                        "$description \nLocal: $addressInfo"
-                                    else description
-
-                                    val serviceData = Service(
-                                        id = finalId,
-                                        title = title,
-                                        description = fullDescription,
-                                        jobType = selectedJobType,
-                                        clientId = "user_anonimo"
-                                    )
-
-                                    if (!serviceId.isNullOrEmpty()) {
-                                        repository.updateService(serviceData)
-                                    } else {
-                                        repository.createService(serviceData)
-                                    }
-
-                                    Toast.makeText(context, "Serviço salvo com sucesso!", Toast.LENGTH_SHORT).show()
-                                    navController.popBackStack()
-                                } catch (e: Exception) {
-                                    Toast.makeText(context, "Erro ao atualizar os dados.", Toast.LENGTH_SHORT).show()
-                                } finally {
-                                    isSaving = false
-                                }
-                            }
-                        }
-                    },
-                    enabled = title.isNotBlank() && description.isNotBlank() && !isSaving
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
+                Text("Cancelar")
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    if (title.isBlank() || description.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            "Preencha todos os campos",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        Text("Salvar")
+                        val newService = ServiceItem(
+                            title = title,
+                            description = description,
+                            category = selectedJobType,
+                            buttonText = "Ver detalhes"
+                        )
+                        viewModel.createService(newService)
+                        navController.popBackStack()
                     }
                 }
+            ) {
+                Text("Salvar")
             }
         }
     }

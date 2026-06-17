@@ -8,23 +8,41 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
+import com.example.workly.model.ProfileData
+import com.example.workly.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(navController: NavController) {
+    val viewModel: ProfileViewModel = viewModel()
+    val profile by viewModel.profile.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val userName by remember { mutableStateOf("João") }
-    val userEmail by remember { mutableStateOf("joao@email.com") }
+    var userName by rememberSaveable { mutableStateOf(profile.name) }
+    var userEmail by rememberSaveable { mutableStateOf(profile.email) }
+    var profession by rememberSaveable { mutableStateOf(profile.profession) }
+    var professionalDescription by rememberSaveable { mutableStateOf(profile.description) }
 
-    var profession by remember { mutableStateOf("Eletricista") }
-    var professionalDescription by remember { mutableStateOf("Profissional qualificado em instalações elétricas residenciais.") }
+    LaunchedEffect(profile) {
+        userName = profile.name
+        userEmail = profile.email
+        profession = profile.profession
+        professionalDescription = profile.description
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadProfileData()
+    }
 
     Scaffold(
         topBar = {
@@ -98,7 +116,7 @@ fun ProfileScreen(navController: NavController) {
 
             OutlinedTextField(
                 value = userName,
-                onValueChange = {  },
+                onValueChange = { userName = it },
                 label = { Text("Nome") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -108,7 +126,7 @@ fun ProfileScreen(navController: NavController) {
 
             OutlinedTextField(
                 value = userEmail,
-                onValueChange = { },
+                onValueChange = { userEmail = it },
                 label = { Text("Email") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -143,12 +161,30 @@ fun ProfileScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = {  },
+                onClick = {
+                    viewModel.saveProfile(
+                        ProfileData(
+                            name = userName,
+                            email = userEmail,
+                            phone = "",
+                            profession = profession,
+                            description = professionalDescription
+                        )
+                    )
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp)
             ) {
                 Text("Salvar alterações")
+            }
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

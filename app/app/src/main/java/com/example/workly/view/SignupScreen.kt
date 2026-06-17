@@ -44,6 +44,10 @@ fun SignupScreen(navController: NavController) {
         mutableStateOf(false)
     }
 
+    var selectedRole by remember {
+        mutableStateOf("client")
+    }
+
     val context = LocalContext.current
 
     val isInPreview = LocalInspectionMode.current
@@ -233,6 +237,26 @@ fun SignupScreen(navController: NavController) {
         )
 
         Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedRole == "client",
+                onClick = { selectedRole = "client" },
+                label = { Text("Cliente") }
+            )
+            FilterChip(
+                selected = selectedRole == "provider",
+                onClick = { selectedRole = "provider" },
+                label = { Text("Prestador") }
+            )
+        }
+
+        Spacer(
             modifier = Modifier.height(24.dp)
         )
 
@@ -283,7 +307,7 @@ fun SignupScreen(navController: NavController) {
                             ).show()
 
                             navController.navigate(
-                                "client_home"
+                                if (selectedRole == "provider") "provider_home" else "client_home"
                             )
 
                         } else {
