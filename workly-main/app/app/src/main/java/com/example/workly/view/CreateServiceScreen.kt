@@ -2,40 +2,24 @@ package com.example.workly.view
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.runtime.*
-import androidx.navigation.NavController
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.viewmodel.compose.viewModel
-import android.widget.Toast
-import androidx.compose.ui.platform.LocalContext
-import com.example.workly.model.ServiceItem
-import com.example.workly.viewmodel.ServiceViewModel
+import androidx.navigation.NavController
+import com.example.workly.presentation.service.CreateServiceUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateServiceScreen(navController: NavController) {
-    val viewModel: ServiceViewModel = viewModel()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val context = LocalContext.current
-
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
-    }
-
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var jobTypeExpanded by remember { mutableStateOf(false) }
-    var selectedJobType by remember { mutableStateOf("Eletricista") }                 
-
+fun CreateServiceScreen(
+    navController: NavController,
+    uiState: CreateServiceUiState, // Estado centralizado que controla a tela
+    onTitleChanged: (String) -> Unit, // Mudança no título
+    onDescriptionChanged: (String) -> Unit, // Mudança na descrição
+    onJobTypeSelected: (String) -> Unit, // Seleção no dropdown
+    onDropdownToggled: (Boolean) -> Unit, // Abrir/fechar dropdown
+    onSaveClicked: () -> Unit // Clicar no botão Salvar
+) {
     val jobTypes = listOf(
         "Eletricista",
         "Encanador",
@@ -46,70 +30,83 @@ fun CreateServiceScreen(navController: NavController) {
         "Outro"
     )
 
+    // Se o ViewModel processar o sucesso e marcar como criado, a tela apenas volta
+    if (uiState.isServiceCreated) {
+        navController.popBackStack()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
             .padding(top = 50.dp),
-
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         Text(
-            "Criar Serviço",
+            text = "Criar Serviço",
             style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(vertical = 8.dp)
         )
 
+        // Campo de Título consome do estado e avisa a mudança para fora
         OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
+            value = uiState.title,
+            onValueChange = onTitleChanged,
             label = { Text("Título do serviço") },
             placeholder = { Text("Ex: Troca de chuveiro") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            singleLine = true
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            singleLine = true,
+            enabled = !uiState.isLoading
         )
 
+        // Dropdown Menu para Tipo de Profissional
         ExposedDropdownMenuBox(
-            expanded = jobTypeExpanded,
-            onExpandedChange = { jobTypeExpanded = it },
+            expanded = uiState.isJobTypeExpanded,
+            onExpandedChange = onDropdownToggled,
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
                 readOnly = true,
-                value = selectedJobType,
+                value = uiState.selectedJobType,
                 onValueChange = {},
                 label = { Text("Tipo de profissional") },
-                modifier = Modifier.menuAnchor()
+                modifier = Modifier.menuAnchor(),
+                enabled = !uiState.isLoading
             )
             ExposedDropdownMenu(
-                expanded = jobTypeExpanded,
-                onDismissRequest = { jobTypeExpanded = false }
+                expanded = uiState.isJobTypeExpanded,
+                onDismissRequest = { onDropdownToggled(false) }
             ) {
                 jobTypes.forEach { type ->
                     DropdownMenuItem(
                         text = { Text(type) },
-                        onClick = {
-                            selectedJobType = type
-                            jobTypeExpanded = false
-                        }
+                        onClick = { onJobTypeSelected(type) }
                     )
                 }
             }
         }
 
+        // Campo de Descrição consome do estado e avisa a mudança para fora
         OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
+            value = uiState.description,
+            onValueChange = onDescriptionChanged,
             label = { Text("Descrição") },
             placeholder = { Text("Detalhes do serviço, local, urgência...") },
-            modifier = Modifier
-                .fillMaxWidth(),
-            maxLines = 5
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 5,
+            enabled = !uiState.isLoading
         )
+
+        // Exibição de mensagem de erro vinda do estado (caso a validação do ViewModel falhe)
+        if (uiState.errorMessage != null) {
+            Text(
+                text = uiState.errorMessage,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.align(Alignment.Start)
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -118,44 +115,24 @@ fun CreateServiceScreen(navController: NavController) {
             horizontalArrangement = Arrangement.End
         ) {
             OutlinedButton(
-                onClick = {
-                    navController.popBackStack()
-                }
+                onClick = { navController.popBackStack() },
+                enabled = !uiState.isLoading
             ) {
                 Text("Cancelar")
             }
+
             Spacer(modifier = Modifier.width(8.dp))
+
             Button(
-                onClick = {
-                    if (title.isBlank() || description.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            "Preencha todos os campos",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        val newService = ServiceItem(
-                            title = title,
-                            description = description,
-                            category = selectedJobType,
-                            buttonText = "Ver detalhes"
-                        )
-                        viewModel.createService(newService)
-                        navController.popBackStack()
-                    }
-                }
+                onClick = onSaveClicked,
+                enabled = !uiState.isLoading
             ) {
-                Text("Salvar")
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("Salvar")
+                }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, heightDp = 700)
-@Composable
-fun CreateServiceScreenPreview() {
-    val navController = rememberNavController()
-    MaterialTheme {
-        CreateServiceScreen(navController = navController)
     }
 }

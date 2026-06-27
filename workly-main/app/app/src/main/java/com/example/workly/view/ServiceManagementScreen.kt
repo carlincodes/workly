@@ -1,7 +1,5 @@
 package com.example.workly.view
 
-import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,42 +8,27 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.workly.model.ServiceItem
-import com.example.workly.viewmodel.ServiceViewModel
+import com.example.workly.presentation.service.ServiceManagementUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServiceManagementScreen(navController: NavController) {
-    val viewModel: ServiceViewModel = viewModel()
-    val userServices by viewModel.userServices.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val context = LocalContext.current
-
-    var showEditDialog by remember { mutableStateOf(false) }
-    var selectedService by remember { mutableStateOf<ServiceItem?>(null) }
-    var editTitle by remember { mutableStateOf("") }
-    var editDescription by remember { mutableStateOf("") }
-    var editCategory by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        viewModel.loadUserServices()
-    }
-
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
-    }
-
+fun ServiceManagementScreen(
+    navController: NavController,
+    uiState: ServiceManagementUiState, // Estado centralizado imutável
+    onEditClicked: (ServiceItem) -> Unit, // Usuário clicou no ícone de editar do card
+    onDeleteClicked: (ServiceItem) -> Unit, // Usuário clicou no ícone de deletar do card
+    onEditTitleChanged: (String) -> Unit, // Mudança de texto no diálogo
+    onEditDescriptionChanged: (String) -> Unit, // Mudança de texto no diálogo
+    onEditCategoryChanged: (String) -> Unit, // Mudança de texto no diálogo
+    onSaveEditClicked: () -> Unit, // Usuário clicou em Salvar no diálogo
+    onDismissDialog: () -> Unit // Usuário cancelou ou fechou o diálogo
+) {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -58,11 +41,7 @@ fun ServiceManagementScreen(navController: NavController) {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    navController.navigate("create_service")
-                }
-            ) {
+            FloatingActionButton(onClick = { navController.navigate("create_service") }) {
                 Text("+")
             }
         }
@@ -73,77 +52,43 @@ fun ServiceManagementScreen(navController: NavController) {
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+            // 1. Tratamento do Estado de LOADING
+            if (uiState.isLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator()
                 }
-            } else if (userServices.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+            }
+            // 2. Tratamento do Estado de LISTA VAZIA
+            else if (uiState.isListEmpty) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Nenhum serviço criado ainda")
                 }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(userServices) { service ->
+            }
+            // 3. Tratamento do Estado de SUCESSO (Lista populada)
+            else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    items(uiState.userServices) { service ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        text = service.title,
-                                        style = MaterialTheme.typography.titleMedium
-                                    )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(text = service.title, style = MaterialTheme.typography.titleMedium)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = service.category,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                    Text(text = service.category, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = service.description,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    Text(text = service.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            selectedService = service
-                                            editTitle = service.title
-                                            editDescription = service.description
-                                            editCategory = service.category
-                                            showEditDialog = true
-                                        }
-                                    ) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    IconButton(onClick = { onEditClicked(service) }) {
                                         Icon(Icons.Default.Edit, contentDescription = "Editar")
                                     }
-
-                                    IconButton(
-                                        onClick = {
-                                            viewModel.deleteService(service.title)
-                                        }
-                                    ) {
+                                    IconButton(onClick = { onDeleteClicked(service) }) {
                                         Icon(Icons.Default.Delete, contentDescription = "Deletar")
                                     }
                                 }
@@ -155,51 +100,41 @@ fun ServiceManagementScreen(navController: NavController) {
         }
     }
 
-    if (showEditDialog && selectedService != null) {
+    // 4. Diálogo de edição controlado reativamente por propriedades do Estado
+    if (uiState.showEditDialog && uiState.selectedService != null) {
         AlertDialog(
-            onDismissRequest = { showEditDialog = false },
+            onDismissRequest = onDismissDialog,
             title = { Text("Editar Serviço") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
-                        value = editTitle,
-                        onValueChange = { editTitle = it },
+                        value = uiState.editTitle,
+                        onValueChange = onEditTitleChanged,
                         label = { Text("Título") },
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
-                        value = editDescription,
-                        onValueChange = { editDescription = it },
+                        value = uiState.editDescription,
+                        onValueChange = onEditDescriptionChanged,
                         label = { Text("Descrição") },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3
                     )
                     OutlinedTextField(
-                        value = editCategory,
-                        onValueChange = { editCategory = it },
+                        value = uiState.editCategory,
+                        onValueChange = onEditCategoryChanged,
                         label = { Text("Categoria") },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             },
             confirmButton = {
-                Button(
-                    onClick = {
-                        val updated = ServiceItem(
-                            title = editTitle,
-                            description = editDescription,
-                            category = editCategory,
-                            buttonText = selectedService?.buttonText ?: ""
-                        )
-                        viewModel.updateService(selectedService?.title ?: "", updated)
-                        showEditDialog = false
-                    }
-                ) {
+                Button(onClick = onSaveEditClicked) {
                     Text("Salvar")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) {
+                TextButton(onClick = onDismissDialog) {
                     Text("Cancelar")
                 }
             }
