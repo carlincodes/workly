@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -139,81 +140,68 @@ fun ClientHomeScreen(navController: NavController) {
                 CircularProgressIndicator()
             }
         } else {
-
-        Column(
-
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
-        ) {
-
-            TextField(
-
-                value = searchQuery,
-
-                onValueChange = {
-                    searchQuery = it
-                },
-
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-
-                label = {
-                    Text("Buscar serviços")
-                },
-
-                leadingIcon = {
-
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = null
-                    )
-                }
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                filterCategories.forEach { category ->
-                    FilterChip(
-                        selected = selectedCategory == category,
-                        onClick = { selectedCategory = category },
-                        label = { Text(category) }
-                    )
-                }
-            }
-
-            LazyColumn(
-
-                verticalArrangement =
-                    Arrangement.spacedBy(12.dp),
-
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 4.dp)
-
-            ) {
-
-                items(filteredServices) { service ->
-                    ServiceCard(
-                        title = service.title,
-                        description = service.description,
-                        category = service.category,
-                        buttonText = service.buttonText,
-                        onClick = {
-                            navController.navigate(
-                                "service_detail/client/${Uri.encode(service.category)}/${Uri.encode(service.title)}?description=${Uri.encode(service.description)}"
-                            )
-                        }
+                    .padding(padding)
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 8.dp
                     )
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        searchQuery = it
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    label = {
+                        Text("Buscar serviços")
+                    },
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null
+                        )
+                    }
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    filterCategories.forEach { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = { selectedCategory = category },
+                            label = { Text(category) }
+                        )
+                    }
+                }
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 4.dp)
+                ) {
+                    items(filteredServices) { service ->
+                        ServiceCard(
+                            title = service.title,
+                            description = service.description,
+                            category = service.category,
+                            buttonText = service.buttonText,
+                            onClick = {
+                                navController.navigate(
+                                    "service_detail/client/${Uri.encode(service.category)}/${Uri.encode(service.title)}?description=${Uri.encode(service.description)}"
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }

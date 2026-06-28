@@ -2,10 +2,12 @@ package com.example.workly.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.workly.WorklyApp
 import com.example.workly.model.ProviderLocationInfo
 import com.example.workly.repository.LocationRepository
+import com.example.workly.service.LocationService
 import com.example.workly.service.LocationUpdate
-import kotlinx.coroutines.flow.Flow
+import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -14,7 +16,14 @@ import kotlinx.coroutines.launch
                                            
                                                      
    
-class MapViewModel(private val locationRepository: LocationRepository) : ViewModel() {
+class MapViewModel(
+    private val locationRepository: LocationRepository = LocationRepository(
+        LocationService(
+            context = WorklyApp.instance,
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(WorklyApp.instance)
+        )
+    )
+) : ViewModel() {
 
     private val _currentLocation = MutableStateFlow<LocationUpdate?>(null)
     val currentLocation: StateFlow<LocationUpdate?> = _currentLocation
@@ -40,8 +49,7 @@ class MapViewModel(private val locationRepository: LocationRepository) : ViewMod
                 _isLoading.value = true
                 locationRepository.getCurrentLocation().collect { location ->
                     _currentLocation.value = location
-                                                                             
-                                                                     
+                    loadNearbyProviders()
                 }
             } catch (e: Exception) {
                 _error.value = e.message ?: "Erro ao obter localização"
@@ -56,6 +64,14 @@ class MapViewModel(private val locationRepository: LocationRepository) : ViewMod
        
     fun setSearchRadius(radiusMeters: Float) {
         _searchRadius.value = radiusMeters
+        loadNearbyProviders()
+    }
+
+    fun loadNearbyProviders() {
+        val current = _currentLocation.value ?: return
+        val availableProviders = sampleProviders()
+        filterProvidersByDistance(availableProviders, _searchRadius.value)
+        _currentLocation.value = current
     }
 
        
@@ -105,5 +121,35 @@ class MapViewModel(private val locationRepository: LocationRepository) : ViewMod
 
     fun clearError() {
         _error.value = null
+    }
+
+    private fun sampleProviders(): List<ProviderLocationInfo> {
+        val current = _currentLocation.value
+        val baseLatitude = current?.latitude ?: -23.550520
+        val baseLongitude = current?.longitude ?: -46.633308
+
+        return listOf(
+            ProviderLocationInfo(
+                providerId = "provider-1",
+                name = "Ana Eletricista",
+                specialty = "Eletricista",
+                latitude = baseLatitude + 0.010,
+                longitude = baseLongitude + 0.008
+            ),
+            ProviderLocationInfo(
+                providerId = "provider-2",
+                name = "Carlos Encanador",
+                specialty = "Encanador",
+                latitude = baseLatitude - 0.012,
+                longitude = baseLongitude + 0.004
+            ),
+            ProviderLocationInfo(
+                providerId = "provider-3",
+                name = "Marina Pintora",
+                specialty = "Pintora",
+                latitude = baseLatitude + 0.006,
+                longitude = baseLongitude - 0.009
+            )
+        )
     }
 }

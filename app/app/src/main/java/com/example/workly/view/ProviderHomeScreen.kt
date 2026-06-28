@@ -116,55 +116,54 @@ fun ProviderHomeScreen(navController: NavController) {
                         CircularProgressIndicator()
                     }
                 } else {
-                
-                TextField(
-                    value = query,
-                    onValueChange = { query = it },
-                    label = { Text("Buscar serviços") },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                )
+                    TextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        label = { Text("Buscar serviços") },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = null)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp)
+                    )
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    filterCategories.forEach { category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { selectedCategory = category },
-                            label = { Text(category) }
-                        )
-                    }
-                }
-
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 4.dp)
-                ) {
-                    items(filteredServices) { service ->
-                    ServiceCard(
-                        title = service.title,
-                        description = service.description,
-                        category = service.category,
-                        buttonText = service.buttonText,
-                        onClick = {
-                            navController.navigate(
-                                "service_detail/provider/${Uri.encode(service.category)}/${Uri.encode(service.title)}?description=${Uri.encode(service.description)}"
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        filterCategories.forEach { category ->
+                            FilterChip(
+                                selected = selectedCategory == category,
+                                onClick = { selectedCategory = category },
+                                label = { Text(category) }
                             )
                         }
-                    )
+                    }
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 4.dp)
+                    ) {
+                        items(filteredServices) { service ->
+                            ServiceCard(
+                                title = service.title,
+                                description = service.description,
+                                category = service.category,
+                                buttonText = service.buttonText,
+                                onClick = {
+                                    navController.navigate(
+                                        "service_detail/provider/${Uri.encode(service.category)}/${Uri.encode(service.title)}?description=${Uri.encode(service.description)}"
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
-                }
-            }
         }
     )
 }

@@ -290,10 +290,10 @@ fun ClientProfileScreen(navController: NavController) {
 
                 Text("Salvar alterações")
             }
-            if (errorMessage != null) {
+            errorMessage?.let { message ->
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = errorMessage,
+                    text = message,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall
                 )

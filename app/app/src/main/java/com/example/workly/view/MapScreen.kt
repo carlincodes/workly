@@ -1,34 +1,47 @@
 package com.example.workly.view
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.workly.model.ProviderLocationInfo
+import com.example.workly.viewmodel.MapViewModel
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.Circle
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.example.workly.viewmodel.MapViewModel
-import com.example.workly.model.ProviderLocationInfo
 
-   
-                   
-                                                          
-   
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(navController: NavController) {
@@ -37,17 +50,21 @@ fun MapScreen(navController: NavController) {
     val providersNearby by viewModel.providersNearby.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val searchRadius by viewModel.searchRadius.collectAsState()
-    
+
     val centerLocation = currentLocation?.let {
         LatLng(it.latitude, it.longitude)
-    } ?: LatLng(-23.550520, -46.633308)                    
-    
+    } ?: LatLng(-23.550520, -46.633308)
+
     val cameraPositionState = rememberCameraPositionState {
-        position = com.google.android.gms.maps.CameraPosition.fromLatLngZoom(centerLocation, 14f)
+        position = CameraPosition.fromLatLngZoom(centerLocation, 14f)
     }
 
     LaunchedEffect(Unit) {
         viewModel.startLocationTracking()
+    }
+
+    LaunchedEffect(centerLocation, searchRadius) {
+        viewModel.loadNearbyProviders()
     }
 
     Scaffold(
@@ -68,14 +85,12 @@ fun MapScreen(navController: NavController) {
                 .padding(paddingValues)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                             
                 GoogleMap(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(0.6f),
                     cameraPositionState = cameraPositionState
                 ) {
-                                                       
                     currentLocation?.let {
                         Marker(
                             state = MarkerState(position = centerLocation),
@@ -84,28 +99,23 @@ fun MapScreen(navController: NavController) {
                         )
                     }
 
-                                               
                     Circle(
                         center = centerLocation,
                         radius = searchRadius.toDouble(),
-                        fillColor = android.graphics.Color.argb(30, 33, 150, 243),
-                        strokeColor = android.graphics.Color.argb(100, 33, 150, 243),
+                        fillColor = Color(0x1E2196F3),
+                        strokeColor = Color(0x802196F3),
                         strokeWidth = 2f
                     )
 
-                                              
                     providersNearby.forEach { provider ->
                         Marker(
-                            state = MarkerState(
-                                position = LatLng(provider.latitude, provider.longitude)
-                            ),
+                            state = MarkerState(position = LatLng(provider.latitude, provider.longitude)),
                             title = provider.name,
                             snippet = provider.specialty
                         )
                     }
                 }
 
-                                     
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -118,7 +128,6 @@ fun MapScreen(navController: NavController) {
                             .padding(16.dp)
                             .verticalScroll(rememberScrollState())
                     ) {
-                                                  
                         Text(
                             text = "Raio de busca: ${(searchRadius / 1000).toInt()} km",
                             style = MaterialTheme.typography.titleSmall
@@ -127,13 +136,12 @@ fun MapScreen(navController: NavController) {
                             value = searchRadius / 1000f,
                             onValueChange = { viewModel.setSearchRadius(it * 1000f) },
                             valueRange = 1f..15f,
-                            steps = 14,
+                            steps = 13,
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                                               
                         Text(
                             text = "Prestadores próximos (${providersNearby.size})",
                             style = MaterialTheme.typography.titleSmall
@@ -144,10 +152,7 @@ fun MapScreen(navController: NavController) {
                         providersNearby.forEach { provider ->
                             ProviderCard(
                                 provider = provider,
-                                onClick = {
-                                                                        
-                                    navController.navigate("chat/${provider.providerId}/${provider.name}")
-                                }
+                                onClick = { navController.navigate("chat") }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -164,26 +169,21 @@ fun MapScreen(navController: NavController) {
             }
 
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
     }
 }
 
-   
-                                            
-   
 @Composable
-fun ProviderCard(
+private fun ProviderCard(
     provider: ProviderLocationInfo,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = true, onClick = onClick),
+            .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -208,7 +208,7 @@ fun ProviderCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.LocationOn,
+                        imageVector = Icons.Default.LocationOn,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -220,7 +220,7 @@ fun ProviderCard(
                     )
                 }
             }
-            
+
             Button(
                 onClick = onClick,
                 modifier = Modifier.padding(start = 8.dp)
@@ -231,109 +231,10 @@ fun ProviderCard(
     }
 }
 
-    val radiusMeters = (radiusKm * 1000).toInt()
-    val filteredProviders = providers.filter { provider ->
-        haversineDistance(center.latitude, center.longitude, provider.location.latitude, provider.location.longitude) <= radiusKm
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Mapa de Prestadores") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = {                                }) {
-                        Icon(Icons.Default.LocationOn, contentDescription = "Localização")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(
-                text = "Raio atual: ${radiusKm.toInt()} km",
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                fontSize = 16.sp
-            )
-            Slider(
-                value = radiusKm,
-                onValueChange = { radiusKm = it.coerceIn(1f, 10f) },
-                valueRange = 1f..10f,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(420.dp)
-                    .padding(16.dp)
-            ) {
-                GoogleMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    properties = com.google.maps.android.compose.MapProperties(isMyLocationEnabled = false)
-                ) {
-                    Circle(
-                        center = center,
-                        radius = radiusMeters.toDouble(),
-                        fillColor = 0x220066CC,
-                        strokeColor = 0x660066CC,
-                        strokeWidth = 2f
-                    )
-                    filteredProviders.forEach { provider ->
-                        Marker(
-                            state = MarkerState(position = provider.location),
-                            title = provider.name,
-                            snippet = provider.specialty
-                        )
-                    }
-                }
-            }
-            Text(
-                text = "Prestadores no raio: ${filteredProviders.size}",
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-            filteredProviders.forEach { provider ->
-                Text(
-                    text = "• ${provider.name} — ${provider.specialty}",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
-        }
-    }
-}
-
-private data class ProviderLocation(
-    val name: String,
-    val location: LatLng,
-    val specialty: String
-)
-
-private fun haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Float {
-    val earthRadius = 6371.0
-    val dLat = Math.toRadians(lat2 - lat1)
-    val dLon = Math.toRadians(lon2 - lon1)
-    val a = Math.sin(dLat / 2).pow(2.0) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon / 2).pow(2.0)
-    val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-    return (earthRadius * c).toFloat()
-}
-
-private fun Double.pow(exponent: Double): Double = kotlin.math.pow(exponent)
-
 @Preview(showBackground = true, heightDp = 900)
 @Composable
-fun MapScreenPreview() {
-    val navController = androidx.navigation.compose.rememberNavController()
+private fun MapScreenPreview() {
     MaterialTheme {
-        MapScreen(navController)
+        MapScreen(navController = rememberNavController())
     }
 }

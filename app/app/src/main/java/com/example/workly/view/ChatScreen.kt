@@ -1,35 +1,60 @@
 package com.example.workly.view
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.workly.viewmodel.ChatViewModel
+import androidx.navigation.NavController
 import com.example.workly.model.ChatMessage
+import com.example.workly.viewmodel.ChatViewModel
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
-   
-                    
-                                                              
-   
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
@@ -41,17 +66,13 @@ fun ChatScreen(
 ) {
     var messageText by remember { mutableStateOf("") }
     val focusManager = LocalFocusManager.current
-    
-                                               
     val viewModel: ChatViewModel = viewModel()
     val messages by viewModel.messages.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val isSending by viewModel.isSending.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    LaunchedEffect(Unit) {
-        if (userId1.isNotEmpty() && userId2.isNotEmpty()) {
-            viewModel.initializeChat(userId1, userId2)
-        }
+    LaunchedEffect(chatId, userId1, userId2) {
+        viewModel.loadChatMessages()
     }
 
     Scaffold(
@@ -76,22 +97,21 @@ fun ChatScreen(
                     .fillMaxSize()
                     .background(Color.White)
             ) {
-                                     
                 LazyColumn(
                     modifier = Modifier
-                        .weight(1f)
+                        .weight(1f, fill = true)
                         .fillMaxWidth()
                         .padding(8.dp),
-                    reverseLayout = true
+                    reverseLayout = true,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(messages.reversed()) { message ->
-                        MessageBubble(message)
+                        MessageBubble(message = message, currentUserId = userId1)
                     }
                 }
 
                 Divider()
 
-                                    
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -109,11 +129,8 @@ fun ChatScreen(
                         keyboardActions = KeyboardActions(
                             onSend = {
                                 if (messageText.isNotBlank()) {
-                                    viewModel.sendMessage(
-                                        text = messageText,
-                                        senderId = userId1,
-                                        senderName = userName
-                                    )
+                                    viewModel.updateMessageText(messageText)
+                                    viewModel.sendMessage(userName)
                                     messageText = ""
                                     focusManager.clearFocus()
                                 }
@@ -131,28 +148,26 @@ fun ChatScreen(
                     IconButton(
                         onClick = {
                             if (messageText.isNotBlank()) {
-                                viewModel.sendMessage(
-                                    text = messageText,
-                                    senderId = userId1,
-                                    senderName = userName
-                                )
+                                viewModel.updateMessageText(messageText)
+                                viewModel.sendMessage(userName)
                                 messageText = ""
+                                focusManager.clearFocus()
                             }
                         },
-                        enabled = messageText.isNotBlank() && !isLoading
+                        enabled = messageText.isNotBlank() && !isSending
                     ) {
                         Icon(Icons.Default.Send, contentDescription = "Enviar")
                     }
                 }
             }
 
-            if (isLoading) {
+            if (isSending) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)
                 )
             }
 
-            if (error != null) {
+            if (errorMessage != null) {
                 Snackbar(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -163,20 +178,17 @@ fun ChatScreen(
                         }
                     }
                 ) {
-                    Text(error ?: "Erro desconhecido")
+                    Text(errorMessage ?: "Erro desconhecido")
                 }
             }
         }
     }
 }
 
-   
-                                               
-   
 @Composable
-fun MessageBubble(message: ChatMessage) {
-    val isCurrentUser = false                                          
-    
+private fun MessageBubble(message: ChatMessage, currentUserId: String) {
+    val isCurrentUser = currentUserId.isNotBlank() && message.senderId == currentUserId
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -184,14 +196,11 @@ fun MessageBubble(message: ChatMessage) {
         horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start
     ) {
         Surface(
-            modifier = Modifier
-                .widthIn(max = 300.dp),
+            modifier = Modifier.widthIn(max = 300.dp),
             shape = RoundedCornerShape(12.dp),
             color = if (isCurrentUser) Color(0xFF2196F3) else Color(0xFFF5F5F5)
         ) {
-            Column(
-                modifier = Modifier.padding(8.dp)
-            ) {
+            Column(modifier = Modifier.padding(8.dp)) {
                 Text(
                     text = message.senderName,
                     style = MaterialTheme.typography.labelSmall,
@@ -203,101 +212,11 @@ fun MessageBubble(message: ChatMessage) {
                     color = if (isCurrentUser) Color.White else Color.Black
                 )
                 Text(
-                    text = SimpleDateFormat("HH:mm", Locale.getDefault())
-                        .format(Date(message.timestamp)),
-                    style = MaterialTheme.typography.labelTiny,
+                    text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp)),
+                    style = MaterialTheme.typography.labelSmall,
                     color = if (isCurrentUser) Color.White else Color.Gray
                 )
             }
         }
-    }
-}
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Chat Workly") },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(12.dp)
-        ) {
-            if (errorMessage != null) {
-                Text(
-                    text = errorMessage,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            }
-            LazyColumn(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(messages) { message ->
-                    ChatMessageRow(message)
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = messageText,
-                    onValueChange = { viewModel.updateMessageText(it) },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Digite sua mensagem") },
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Send),
-                    keyboardActions = KeyboardActions(onSend = {
-                        viewModel.sendMessage("Usuário")
-                        focusManager.clearFocus()
-                    })
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        viewModel.sendMessage("Usuário")
-                        focusManager.clearFocus()
-                    },
-                    enabled = !isSending
-                ) {
-                    Icon(Icons.Default.Send, contentDescription = "Enviar")
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Enviar")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ChatMessageRow(message: com.example.workly.model.ChatMessage) {
-    val backgroundColor = if (message.senderName == "Usuário") Color(0xFFE3F2FD) else Color(0xFFF1F8E9)
-    val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor, RoundedCornerShape(12.dp))
-            .padding(12.dp)
-    ) {
-        Text(text = message.senderName, style = MaterialTheme.typography.labelLarge)
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(text = message.text, style = MaterialTheme.typography.bodyMedium)
-        Spacer(modifier = Modifier.height(6.dp))
-        Text(text = time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

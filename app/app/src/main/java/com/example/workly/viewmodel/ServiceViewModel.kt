@@ -2,16 +2,14 @@ package com.example.workly.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.workly.data.repository.ItemsRepositoryImpl
 import com.example.workly.model.ServiceItem
-import com.example.workly.repository.ServiceRepository
-import com.example.workly.repository.ApiRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class ServiceViewModel : ViewModel() {
-    private val repository = ServiceRepository()
-    private val apiRepository = ApiRepository()
+    private val repository = ItemsRepositoryImpl()
 
     private val _userServices = MutableStateFlow<List<ServiceItem>>(emptyList())
     val userServices: StateFlow<List<ServiceItem>> = _userServices
@@ -64,7 +62,7 @@ class ServiceViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val services = apiRepository.getServicesFromApi()
+                val services = repository.getServicesFromApi()
                 _apiServices.value = services
                 _errorMessage.value = null
             } catch (e: Exception) {
