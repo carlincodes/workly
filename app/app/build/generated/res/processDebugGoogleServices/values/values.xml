@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">488859123919</string>
+    <string name="google_api_key" translatable="false">AIzaSyDus66CGp282r52p_tSs84bakAqmpGIfSU</string>
+    <string name="google_app_id" translatable="false">1:488859123919:android:2d5729d032befdcab737ba</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyDus66CGp282r52p_tSs84bakAqmpGIfSU</string>
+    <string name="google_storage_bucket" translatable="false">workly-a1d4c.firebasestorage.app</string>
+    <string name="project_id" translatable="false">workly-a1d4c</string>
+</resources>

@@ -1,0 +1,19 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.workly.app-mergeDebugResources-61:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\JAN\\.gradle\\caches\\9.3.1\\transforms\\57aa379f0a50fd82af7a1392a24924a0\\workspace\\transformed\\material3\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

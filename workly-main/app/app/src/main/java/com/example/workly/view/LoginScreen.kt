@@ -24,11 +24,6 @@ fun LoginScreen(
     onTogglePasswordVisibility: () -> Unit,
     onLoginClicked: () -> Unit
 ) {
-    // Se o ViewModel processar o login com sucesso, navega para a Home correspondente externa
-    if (uiState.isSuccess) {
-        // Nota: A decisão de ir para a Home do Cliente ou Prestador será tratada na navegação pela Pessoa 2
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()

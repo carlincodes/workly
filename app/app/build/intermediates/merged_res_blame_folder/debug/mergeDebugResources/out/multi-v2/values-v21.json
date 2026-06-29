@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.example.workly.app-mergeDebugResources-61:/values-v21/values-v21.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\JAN\\.gradle\\caches\\9.3.1\\transforms\\1c673960248de7c64cce3f219028a120\\workspace\\transformed\\credentials-play-services-auth-1.2.0-rc01\\res\\values-v21\\values-v21.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "9",
+                        "endColumns": "12",
+                        "endOffsets": "543"
+                    }
+                }
+            ]
+        }
+    ]
+}

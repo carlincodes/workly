@@ -1,6 +1,7 @@
 package com.example.workly.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -40,6 +41,16 @@ fun AppNavigation() {
         composable("login") {
             val authViewModel: AuthViewModel = viewModel()
             val uiState by authViewModel.uiState.collectAsState()
+
+            LaunchedEffect(uiState.isSuccess) {
+                if (uiState.isSuccess) {
+                    navController.navigate(uiState.destinationRoute ?: "client_home") {
+                        popUpTo("login") { inclusive = true }
+                    }
+                    authViewModel.clearSuccess()
+                }
+            }
+
             LoginScreen(
                 navController = navController,
                 uiState = uiState,
@@ -53,6 +64,14 @@ fun AppNavigation() {
         composable("signup") {
             val authViewModel: AuthViewModel = viewModel()
             val uiState by authViewModel.uiState.collectAsState()
+
+            LaunchedEffect(uiState.isSuccess) {
+                if (uiState.isSuccess) {
+                    navController.popBackStack()
+                    authViewModel.clearSuccess()
+                }
+            }
+
             SignupScreen(
                 navController = navController,
                 uiState = uiState,

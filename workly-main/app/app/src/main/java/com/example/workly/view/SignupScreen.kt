@@ -25,10 +25,6 @@ fun SignupScreen(
     onTogglePasswordVisibility: () -> Unit,
     onSignupClicked: () -> Unit
 ) {
-    if (uiState.isSuccess) {
-        navController.popBackStack() // Volta para a ecrã de login após cadastrar
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()

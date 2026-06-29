@@ -7,5 +7,6 @@ data class AuthUiState(
     val confirmPasswordInput: String = "", // Usado apenas no Signup
     val isPasswordVisible: Boolean = false,
     val errorMessage: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val destinationRoute: String? = null
 )
