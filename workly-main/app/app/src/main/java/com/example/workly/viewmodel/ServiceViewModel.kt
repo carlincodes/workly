@@ -5,138 +5,185 @@ import androidx.lifecycle.viewModelScope
 import com.example.workly.model.ServiceItem
 import com.example.workly.repository.ServiceRepository
 import com.example.workly.repository.ApiRepository
+import com.example.workly.presentation.service.CreateServiceUiState
+import com.example.workly.presentation.service.ServiceManagementUiState
+import com.example.workly.presentation.api.ApiServicesUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ServiceViewModel : ViewModel() {
     private val repository = ServiceRepository()
     private val apiRepository = ApiRepository()
 
-    private val _userServices = MutableStateFlow<List<ServiceItem>>(emptyList())
-    val userServices: StateFlow<List<ServiceItem>> = _userServices
+    private val _createServiceUiState = MutableStateFlow(CreateServiceUiState())
+    val createServiceUiState: StateFlow<CreateServiceUiState> = _createServiceUiState.asStateFlow()
 
-    private val _availableServices = MutableStateFlow<List<ServiceItem>>(emptyList())
-    val availableServices: StateFlow<List<ServiceItem>> = _availableServices
+    private val _managementUiState = MutableStateFlow(ServiceManagementUiState())
+    val managementUiState: StateFlow<ServiceManagementUiState> = _managementUiState.asStateFlow()
 
-    private val _apiServices = MutableStateFlow<List<ServiceItem>>(emptyList())
-    val apiServices: StateFlow<List<ServiceItem>> = _apiServices
+    private val _apiUiState = MutableStateFlow(ApiServicesUiState())
+    val apiUiState: StateFlow<ApiServicesUiState> = _apiUiState.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
+    fun onTitleChanged(title: String) {
+        _createServiceUiState.update { it.copy(title = title) }
+    }
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
+    fun onDescriptionChanged(description: String) {
+        _createServiceUiState.update { it.copy(description = description) }
+    }
+
+    fun onJobTypeSelected(jobType: String) {
+        _createServiceUiState.update { it.copy(selectedJobType = jobType, isJobTypeExpanded = false) }
+    }
+
+    fun onDropdownToggled(expanded: Boolean) {
+        _createServiceUiState.update { it.copy(isJobTypeExpanded = expanded) }
+    }
+
+    fun onSaveClicked() {
+        val state = _createServiceUiState.value
+        val service = ServiceItem(
+            title = state.title,
+            description = state.description,
+            category = state.selectedJobType,
+            buttonText = "Ver Detalhes"
+        )
+        createService(service)
+    }
+
+    fun onEditClicked(service: ServiceItem) {
+        _managementUiState.update { 
+            it.copy(
+                selectedService = service,
+                editTitle = service.title,
+                editDescription = service.description,
+                editCategory = service.category,
+                showEditDialog = true
+            ) 
+        }
+    }
+
+    fun onDeleteClicked(service: ServiceItem) {
+        deleteService(service.title)
+    }
+
+    fun onEditTitleChanged(title: String) {
+        _managementUiState.update { it.copy(editTitle = title) }
+    }
+
+    fun onEditDescriptionChanged(description: String) {
+        _managementUiState.update { it.copy(editDescription = description) }
+    }
+
+    fun onEditCategoryChanged(category: String) {
+        _managementUiState.update { it.copy(editCategory = category) }
+    }
+
+    fun onSaveEditClicked() {
+        val state = _managementUiState.value
+        val selected = state.selectedService ?: return
+        val updated = ServiceItem(
+            title = state.editTitle,
+            description = state.editDescription,
+            category = state.editCategory,
+            buttonText = selected.buttonText
+        )
+        updateService(selected.title, updated)
+        onDismissDialog()
+    }
+
+    fun onDismissDialog() {
+        _managementUiState.update { it.copy(showEditDialog = false, selectedService = null) }
+    }
+
+    fun onCepChanged(cep: String) {
+        _apiUiState.update { it.copy(cepInput = cep) }
+    }
+
+    fun onSearchClicked() {
+        viewModelScope.launch {
+            _apiUiState.update { it.copy(isLoading = true, errorMessage = null) }
+            try {
+                // Simulação de busca na API
+                kotlinx.coroutines.delay(1000)
+                _apiUiState.update { it.copy(addressResult = "Endereço para o CEP ${_apiUiState.value.cepInput}") }
+            } catch (e: Exception) {
+                _apiUiState.update { it.copy(errorMessage = "Erro ao buscar CEP") }
+            } finally {
+                _apiUiState.update { it.copy(isLoading = false) }
+            }
+        }
+    }
 
     fun loadUserServices() {
         viewModelScope.launch {
-            _isLoading.value = true
+            _managementUiState.update { it.copy(isLoading = true) }
             try {
                 val services = repository.getServices()
-                _userServices.value = services
-                _errorMessage.value = null
+                _managementUiState.update { it.copy(userServices = services, errorMessage = null) }
             } catch (e: Exception) {
-                _errorMessage.value = "Erro ao carregar serviços"
-                e.printStackTrace()
+                _managementUiState.update { it.copy(errorMessage = "Erro ao carregar serviços") }
             } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun loadAvailableServices() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val services = repository.getAvailableServices()
-                _availableServices.value = services
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = "Erro ao carregar serviços disponíveis"
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun loadServicesFromApi() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val services = apiRepository.getServicesFromApi()
-                _apiServices.value = services
-                _errorMessage.value = null
-            } catch (e: Exception) {
-                _errorMessage.value = "Erro ao carregar serviços da API"
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
+                _managementUiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
     fun createService(service: ServiceItem) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _createServiceUiState.update { it.copy(isLoading = true) }
             try {
                 val success = repository.createService(service)
                 if (success) {
+                    _createServiceUiState.update { it.copy(isServiceCreated = true, errorMessage = null) }
                     loadUserServices()
-                    _errorMessage.value = null
                 } else {
-                    _errorMessage.value = "Erro ao criar serviço"
+                    _createServiceUiState.update { it.copy(errorMessage = "Erro ao criar serviço") }
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Erro: ${e.message}"
-                e.printStackTrace()
+                _createServiceUiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
             } finally {
-                _isLoading.value = false
+                _createServiceUiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
     fun updateService(oldTitle: String, updatedService: ServiceItem) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _managementUiState.update { it.copy(isLoading = true) }
             try {
                 val success = repository.updateService(oldTitle, updatedService)
                 if (success) {
                     loadUserServices()
-                    _errorMessage.value = null
                 } else {
-                    _errorMessage.value = "Erro ao atualizar serviço"
+                    _managementUiState.update { it.copy(errorMessage = "Erro ao atualizar serviço") }
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Erro: ${e.message}"
-                e.printStackTrace()
+                _managementUiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
             } finally {
-                _isLoading.value = false
+                _managementUiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
     fun deleteService(serviceTitle: String) {
         viewModelScope.launch {
-            _isLoading.value = true
+            _managementUiState.update { it.copy(isLoading = true) }
             try {
                 val success = repository.deleteService(serviceTitle)
                 if (success) {
                     loadUserServices()
-                    _errorMessage.value = null
                 } else {
-                    _errorMessage.value = "Erro ao deletar serviço"
+                    _managementUiState.update { it.copy(errorMessage = "Erro ao deletar serviço") }
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Erro: ${e.message}"
-                e.printStackTrace()
+                _managementUiState.update { it.copy(errorMessage = "Erro: ${e.message}") }
             } finally {
-                _isLoading.value = false
+                _managementUiState.update { it.copy(isLoading = false) }
             }
         }
-    }
-
-    fun clearError() {
-        _errorMessage.value = null
     }
 }

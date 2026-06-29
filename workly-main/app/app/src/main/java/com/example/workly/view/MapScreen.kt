@@ -5,29 +5,38 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.workly.model.ProviderLocationInfo
 import com.example.workly.presentation.map.MapUiState
-import com.google.maps.android.compose.*
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Circle
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     navController: NavController,
-    uiState: MapUiState, // Estado imutável controlado externamente
-    onRadiusChanged: (Float) -> Unit, // Evento de arrastar o Slider de raio
-    onProviderClicked: (ProviderLocationInfo) -> Unit // Evento de clique para abrir chat com prestador
+    uiState: MapUiState,
+    onRadiusChanged: (Float) -> Unit,
+    onProviderClicked: (ProviderLocationInfo) -> Unit
 ) {
     val cameraPositionState = rememberCameraPositionState {
-        position = com.google.android.gms.maps.CameraPosition.fromLatLngZoom(uiState.userLocation, 13f)
+        position = CameraPosition.fromLatLngZoom(uiState.userLocation, 13f)
     }
+
+    val userMarkerState = rememberMarkerState(position = uiState.userLocation)
 
     Scaffold(
         topBar = {
@@ -35,7 +44,10 @@ fun MapScreen(
                 title = { Text("Prestadores Próximos") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Voltar"
+                        )
                     }
                 }
             )
@@ -48,34 +60,30 @@ fun MapScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // Renderização do Google Maps integrada ao Estado
                 GoogleMap(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(0.6f),
                     cameraPositionState = cameraPositionState
                 ) {
-                    // Marcador da posição atual do usuário
                     Marker(
-                        state = MarkerState(position = uiState.userLocation),
+                        state = userMarkerState,
                         title = "Sua Localização",
                         snippet = "Você está aqui"
                     )
 
-                    // Círculo visual do raio de busca
                     Circle(
                         center = uiState.userLocation,
                         radius = uiState.searchRadiusMeters.toDouble(),
-                        fillColor = android.graphics.Color.argb(30, 33, 150, 243),
-                        strokeColor = android.graphics.Color.argb(100, 33, 150, 243),
+                        fillColor = Color(0x1E2196F3),
+                        strokeColor = Color(0x642196F3),
                         strokeWidth = 2f
                     )
 
-                    // Marcadores dinâmicos dos prestadores encontrados no raio
                     uiState.providersNearby.forEach { provider ->
                         Marker(
-                            state = MarkerState(
-                                position = com.google.android.gms.maps.model.LatLng(provider.latitude, provider.longitude)
+                            state = rememberMarkerState(
+                                position = LatLng(provider.latitude, provider.longitude)
                             ),
                             title = provider.name,
                             snippet = provider.specialty
@@ -83,7 +91,6 @@ fun MapScreen(
                     }
                 }
 
-                // Painel Inferior de Controle e Listagem de Itens
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -105,7 +112,7 @@ fun MapScreen(
                             value = uiState.searchRadiusMeters / 1000f,
                             onValueChange = { onRadiusChanged(it * 1000f) },
                             valueRange = 1f..15f,
-                            steps = 14,
+                            steps = 13,
                             modifier = Modifier.fillMaxWidth(),
                             enabled = !uiState.isLoading
                         )
@@ -119,7 +126,6 @@ fun MapScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Lista os prestadores que estão no Estado de Sucesso
                         if (uiState.hasProviders) {
                             uiState.providersNearby.forEach { provider ->
                                 ProviderCard(
@@ -139,7 +145,6 @@ fun MapScreen(
                 }
             }
 
-            // Estado de LOADING sobreposto
             if (uiState.isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.align(Alignment.Center)

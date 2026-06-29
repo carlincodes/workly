@@ -14,48 +14,44 @@ import kotlinx.coroutines.launch
                                            
                                                      
    
+import com.example.workly.presentation.map.MapUiState
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import com.google.android.gms.maps.model.LatLng
+
 class MapViewModel(private val locationRepository: LocationRepository) : ViewModel() {
 
-    private val _currentLocation = MutableStateFlow<LocationUpdate?>(null)
-    val currentLocation: StateFlow<LocationUpdate?> = _currentLocation
+    private val _uiState = MutableStateFlow(MapUiState())
+    val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
-    private val _providersNearby = MutableStateFlow<List<ProviderLocationInfo>>(emptyList())
-    val providersNearby: StateFlow<List<ProviderLocationInfo>> = _providersNearby
-
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading
-
-    private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error
-
-    private val _searchRadius = MutableStateFlow(5000f)              
-    val searchRadius: StateFlow<Float> = _searchRadius
-
-       
-                                           
-       
     fun startLocationTracking() {
         viewModelScope.launch {
             try {
-                _isLoading.value = true
+                _uiState.update { it.copy(isLoading = true) }
                 locationRepository.getCurrentLocation().collect { location ->
-                    _currentLocation.value = location
-                                                                             
-                                                                     
+                    _uiState.update { it.copy(userLocation = LatLng(location.latitude, location.longitude)) }
                 }
             } catch (e: Exception) {
-                _error.value = e.message ?: "Erro ao obter localização"
+                _uiState.update { it.copy(errorMessage = e.message ?: "Erro ao obter localização") }
             } finally {
-                _isLoading.value = false
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    fun onRadiusChanged(radiusMeters: Float) {
+        _uiState.update { it.copy(searchRadiusMeters = radiusMeters) }
+    }
+
+    fun onProviderClicked(provider: ProviderLocationInfo) {
+        // Handle provider click
     }
 
        
                                
        
     fun setSearchRadius(radiusMeters: Float) {
-        _searchRadius.value = radiusMeters
+        _uiState.update { it.copy(searchRadiusMeters = radiusMeters) }
     }
 
        
@@ -64,9 +60,9 @@ class MapViewModel(private val locationRepository: LocationRepository) : ViewMod
        
     fun filterProvidersByDistance(
         allProviders: List<ProviderLocationInfo>,
-        radiusMeters: Float = _searchRadius.value
+        radiusMeters: Float = _uiState.value.searchRadiusMeters
     ) {
-        val current = _currentLocation.value ?: return
+        val current = _uiState.value.userLocation
 
         val filtered = allProviders.filter { provider ->
             val distance = calculateDistance(
@@ -83,7 +79,7 @@ class MapViewModel(private val locationRepository: LocationRepository) : ViewMod
             )
         }.sortedBy { it.distance }
 
-        _providersNearby.value = filtered
+        _uiState.update { it.copy(providersNearby = filtered) }
     }
 
        
@@ -104,6 +100,6 @@ class MapViewModel(private val locationRepository: LocationRepository) : ViewMod
     }
 
     fun clearError() {
-        _error.value = null
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

@@ -4,56 +4,64 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.workly.model.ChatMessage
 import com.example.workly.repository.ChatRepository
+import com.example.workly.presentation.chat.ChatUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ChatViewModel : ViewModel() {
-    private val repository = ChatRepository()
+class ChatViewModel(private val chatRepository: ChatRepository = ChatRepository()) : ViewModel() {
 
-    private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
-    val messages: StateFlow<List<ChatMessage>> = _messages
+    private val _uiState = MutableStateFlow(ChatUiState())
+    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    private val _messageText = MutableStateFlow("")
-    val messageText: StateFlow<String> = _messageText
+    init {
+        loadMessages()
+    }
 
-    private val _isSending = MutableStateFlow(false)
-    val isSending: StateFlow<Boolean> = _isSending
-
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage: StateFlow<String?> = _errorMessage
-
-    fun loadChatMessages() {
+    private fun loadMessages() {
         viewModelScope.launch {
-            repository.getChatMessages().collectLatest { list ->
-                _messages.value = list
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                chatRepository.getChatMessages().collect { messageList ->
+                    _uiState.update { it.copy(messages = messageList) }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message ?: "Erro ao carregar mensagens") }
+            } finally {
+                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
 
-    fun updateMessageText(text: String) {
-        _messageText.value = text
+    fun onMessageTextChanged(text: String) {
+        _uiState.update { it.copy(messageInput = text) }
     }
 
-    fun sendMessage(senderName: String) {
-        val text = messageText.value.trim()
-        if (text.isEmpty()) return
-
+    fun onSendMessageClicked() {
+        val state = _uiState.value
+        if (state.messageInput.isBlank()) return
+        
         viewModelScope.launch {
-            _isSending.value = true
-            val result = repository.sendMessage(text, senderName)
-            if (!result) {
-                _errorMessage.value = "Falha ao enviar mensagem"
-            } else {
-                _messageText.value = ""
-                _errorMessage.value = null
+            try {
+                val success = chatRepository.sendMessage(state.messageInput, "Usuário")
+                if (success) {
+                    _uiState.update { it.copy(messageInput = "") }
+                } else {
+                    _uiState.update { it.copy(errorMessage = "Erro ao enviar mensagem") }
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message ?: "Erro ao enviar mensagem") }
             }
-            _isSending.value = false
         }
+    }
+
+    fun onErrorDismissed() {
+        _uiState.update { it.copy(errorMessage = null) }
     }
 
     fun clearError() {
-        _errorMessage.value = null
+        _uiState.update { it.copy(errorMessage = null) }
     }
 }

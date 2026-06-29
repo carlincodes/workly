@@ -17,6 +17,16 @@ import com.example.workly.view.ServiceManagementScreen
 import com.example.workly.view.ServiceDetailScreen
 import com.example.workly.view.SignupScreen
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.workly.viewmodel.AuthViewModel
+import com.example.workly.viewmodel.ChatViewModel
+import com.example.workly.viewmodel.HomeViewModel
+import com.example.workly.viewmodel.MapViewModel
+import com.example.workly.viewmodel.ProfileViewModel
+import com.example.workly.viewmodel.ServiceViewModel
+
 @Composable
 fun AppNavigation() {
 
@@ -28,27 +38,79 @@ fun AppNavigation() {
     ) {
 
         composable("login") {
-            LoginScreen(navController)
+            val authViewModel: AuthViewModel = viewModel()
+            val uiState by authViewModel.uiState.collectAsState()
+            LoginScreen(
+                navController = navController,
+                uiState = uiState,
+                onEmailChanged = authViewModel::onEmailChanged,
+                onPasswordChanged = authViewModel::onPasswordChanged,
+                onTogglePasswordVisibility = authViewModel::onTogglePasswordVisibility,
+                onLoginClicked = authViewModel::onLoginClicked
+            )
         }
 
         composable("signup") {
-            SignupScreen(navController)
+            val authViewModel: AuthViewModel = viewModel()
+            val uiState by authViewModel.uiState.collectAsState()
+            SignupScreen(
+                navController = navController,
+                uiState = uiState,
+                onEmailChanged = authViewModel::onEmailChanged,
+                onPasswordChanged = authViewModel::onPasswordChanged,
+                onConfirmPasswordChanged = authViewModel::onConfirmPasswordChanged,
+                onTogglePasswordVisibility = authViewModel::onTogglePasswordVisibility,
+                onSignupClicked = authViewModel::onSignupClicked
+            )
         }
 
         composable("client_home") {
-            ClientHomeScreen(navController)
+            val homeViewModel: HomeViewModel = viewModel()
+            val uiState by homeViewModel.clientUiState.collectAsState()
+            ClientHomeScreen(
+                navController = navController,
+                uiState = uiState,
+                onSearchQueryChanged = homeViewModel::onSearchQueryChanged,
+                onCategorySelected = homeViewModel::onCategorySelected
+            )
         }
 
         composable("provider_home") {
-            ProviderHomeScreen(navController)
+            val homeViewModel: HomeViewModel = viewModel()
+            val uiState by homeViewModel.providerUiState.collectAsState()
+            ProviderHomeScreen(
+                navController = navController,
+                uiState = uiState,
+                onSearchQueryChanged = homeViewModel::onSearchQueryChanged,
+                onCategorySelected = homeViewModel::onCategorySelected
+            )
         }
 
         composable("api_services") {
-            ApiServicesScreen(navController)
+            val serviceViewModel: ServiceViewModel = viewModel()
+            val uiState by serviceViewModel.apiUiState.collectAsState()
+            ApiServicesScreen(
+                navController = navController,
+                uiState = uiState,
+                onCepChanged = serviceViewModel::onCepChanged,
+                onSearchClicked = serviceViewModel::onSearchClicked
+            )
         }
 
         composable("service_management") {
-            ServiceManagementScreen(navController)
+            val serviceViewModel: ServiceViewModel = viewModel()
+            val uiState by serviceViewModel.managementUiState.collectAsState()
+            ServiceManagementScreen(
+                navController = navController,
+                uiState = uiState,
+                onEditClicked = serviceViewModel::onEditClicked,
+                onDeleteClicked = serviceViewModel::onDeleteClicked,
+                onEditTitleChanged = serviceViewModel::onEditTitleChanged,
+                onEditDescriptionChanged = serviceViewModel::onEditDescriptionChanged,
+                onEditCategoryChanged = serviceViewModel::onEditCategoryChanged,
+                onSaveEditClicked = serviceViewModel::onSaveEditClicked,
+                onDismissDialog = serviceViewModel::onDismissDialog
+            )
         }
 
         composable("service_detail/{role}/{category}/{title}?description={description}") { backStackEntry ->
@@ -67,23 +129,64 @@ fun AppNavigation() {
         }
 
         composable("create_service") {
-            CreateServiceScreen(navController)
+            val serviceViewModel: ServiceViewModel = viewModel()
+            val uiState by serviceViewModel.createServiceUiState.collectAsState()
+            CreateServiceScreen(
+                navController = navController,
+                uiState = uiState,
+                onTitleChanged = serviceViewModel::onTitleChanged,
+                onDescriptionChanged = serviceViewModel::onDescriptionChanged,
+                onJobTypeSelected = serviceViewModel::onJobTypeSelected,
+                onDropdownToggled = serviceViewModel::onDropdownToggled,
+                onSaveClicked = serviceViewModel::onSaveClicked
+            )
         }
 
         composable("profile") {
-            ProfileScreen(navController)
+            val profileViewModel: ProfileViewModel = viewModel()
+            val uiState by profileViewModel.uiState.collectAsState()
+            ProfileScreen(
+                navController = navController,
+                uiState = uiState,
+                onProfileDataChanged = profileViewModel::onProfileDataChanged,
+                onSaveClicked = { profileViewModel.saveProfile(uiState.profileData) },
+                onLogoutClicked = { navController.navigate("login") }
+            )
         }
 
         composable("client_profile") {
-            ClientProfileScreen(navController)
+            val profileViewModel: ProfileViewModel = viewModel()
+            val uiState by profileViewModel.uiState.collectAsState()
+            ClientProfileScreen(
+                navController = navController,
+                uiState = uiState,
+                onProfileDataChanged = profileViewModel::onProfileDataChanged,
+                onSaveClicked = { profileViewModel.saveProfile(uiState.profileData) },
+                onLogoutClicked = { navController.navigate("login") }
+            )
         }
 
         composable("map") {
-            MapScreen(navController)
+            val mapViewModel: MapViewModel = viewModel()
+            val uiState by mapViewModel.uiState.collectAsState()
+            MapScreen(
+                navController = navController,
+                uiState = uiState,
+                onRadiusChanged = mapViewModel::onRadiusChanged,
+                onProviderClicked = mapViewModel::onProviderClicked
+            )
         }
 
         composable("chat") {
-            ChatScreen(navController)
+            val chatViewModel: ChatViewModel = viewModel()
+            val uiState by chatViewModel.uiState.collectAsState()
+            ChatScreen(
+                navController = navController,
+                uiState = uiState,
+                onMessageTextChanged = chatViewModel::onMessageTextChanged,
+                onSendMessageClicked = chatViewModel::onSendMessageClicked,
+                onErrorDismissed = chatViewModel::onErrorDismissed
+            )
         }
     }
 }

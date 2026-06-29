@@ -37,6 +37,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
+    }
+
     buildFeatures {
         compose = true
     }
@@ -61,10 +67,12 @@ dependencies {
     implementation(libs.firebase.storage)
 
     implementation(libs.google.maps)
+    implementation(libs.google.play.services.location)
     implementation(libs.maps.compose)
 
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.okhttp.logging.interceptor)
 
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.foundation)

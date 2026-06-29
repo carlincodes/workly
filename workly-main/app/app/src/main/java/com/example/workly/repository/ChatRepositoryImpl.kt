@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
                              
                                                            
    
-class ChatRepository(private val chatService: ChatService) {
+class ChatRepositoryImpl(private val chatService: ChatService) {
 
     suspend fun sendMessage(chatId: String, message: ChatMessage): Boolean {
         val result = chatService.sendMessage(chatId, message)
