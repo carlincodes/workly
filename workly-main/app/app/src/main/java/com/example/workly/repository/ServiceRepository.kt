@@ -1,27 +1,20 @@
 package com.example.workly.repository
 
+import com.example.workly.data.local.dao.ServiceDao
+import com.example.workly.data.local.mapper.toEntity
+import com.example.workly.data.local.mapper.toServiceItem
 import com.example.workly.model.ServiceItem
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
 
-class ServiceRepository {
-    private val db = FirebaseFirestore.getInstance()
-    private val auth = FirebaseAuth.getInstance()
-    private val servicesCollection = "services"
+class ServiceRepository(
+    private val serviceDao: ServiceDao,
+    private val auth: FirebaseAuth
+) {
 
     suspend fun createService(service: ServiceItem): Boolean {
         return try {
             val userId = auth.currentUser?.uid ?: return false
-            val documentData = mapOf(
-                "title" to service.title,
-                "description" to service.description,
-                "category" to service.category,
-                "userId" to userId,
-                "buttonText" to service.buttonText,
-                "timestamp" to System.currentTimeMillis()
-            )
-            db.collection(servicesCollection).document().set(documentData).await()
+            serviceDao.insert(service.toEntity(userId))
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -32,19 +25,7 @@ class ServiceRepository {
     suspend fun getServices(): List<ServiceItem> {
         return try {
             val userId = auth.currentUser?.uid ?: return emptyList()
-            val snapshot = db.collection(servicesCollection)
-                .whereEqualTo("userId", userId)
-                .get()
-                .await()
-
-            snapshot.documents.mapNotNull { doc ->
-                ServiceItem(
-                    title = doc.getString("title") ?: "",
-                    description = doc.getString("description") ?: "",
-                    category = doc.getString("category") ?: "",
-                    buttonText = doc.getString("buttonText") ?: ""
-                )
-            }
+            serviceDao.getByUserId(userId).map { it.toServiceItem() }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -53,20 +34,8 @@ class ServiceRepository {
 
     suspend fun getAvailableServices(): List<ServiceItem> {
         return try {
-            val currentUserId = auth.currentUser?.uid ?: ""
-            val snapshot = db.collection(servicesCollection)
-                .whereNotEqualTo("userId", currentUserId)
-                .get()
-                .await()
-
-            snapshot.documents.mapNotNull { doc ->
-                ServiceItem(
-                    title = doc.getString("title") ?: "",
-                    description = doc.getString("description") ?: "",
-                    category = doc.getString("category") ?: "",
-                    buttonText = doc.getString("buttonText") ?: ""
-                )
-            }
+            val currentUserId = auth.currentUser?.uid ?: return emptyList()
+            serviceDao.getAvailableServices(currentUserId).map { it.toServiceItem() }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -79,26 +48,17 @@ class ServiceRepository {
     ): Boolean {
         return try {
             val userId = auth.currentUser?.uid ?: return false
-            val query = db.collection(servicesCollection)
-                .whereEqualTo("title", serviceTitle)
-                .whereEqualTo("userId", userId)
-                .get()
-                .await()
+            val existing = serviceDao.getByTitleAndUserId(serviceTitle, userId) ?: return false
 
-            if (query.documents.isNotEmpty()) {
-                val doc = query.documents[0]
-                db.collection(servicesCollection).document(doc.id).update(
-                    mapOf(
-                        "title" to updatedService.title,
-                        "description" to updatedService.description,
-                        "category" to updatedService.category,
-                        "buttonText" to updatedService.buttonText
-                    )
-                ).await()
-                true
-            } else {
-                false
-            }
+            serviceDao.update(
+                existing.copy(
+                    title = updatedService.title,
+                    description = updatedService.description,
+                    category = updatedService.category,
+                    buttonText = updatedService.buttonText
+                )
+            )
+            true
         } catch (e: Exception) {
             e.printStackTrace()
             false
@@ -108,19 +68,8 @@ class ServiceRepository {
     suspend fun deleteService(serviceTitle: String): Boolean {
         return try {
             val userId = auth.currentUser?.uid ?: return false
-            val query = db.collection(servicesCollection)
-                .whereEqualTo("title", serviceTitle)
-                .whereEqualTo("userId", userId)
-                .get()
-                .await()
-
-            if (query.documents.isNotEmpty()) {
-                val doc = query.documents[0]
-                db.collection(servicesCollection).document(doc.id).delete().await()
-                true
-            } else {
-                false
-            }
+            serviceDao.deleteByTitleAndUserId(serviceTitle, userId)
+            true
         } catch (e: Exception) {
             e.printStackTrace()
             false

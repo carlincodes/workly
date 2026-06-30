@@ -30,11 +30,7 @@ fun CreateServiceScreen(
         "Outro"
     )
 
-    // Se o ViewModel processar o sucesso e marcar como criado, a tela apenas volta
-    if (uiState.isServiceCreated) {
-        navController.popBackStack()
-    }
-
+    // Navegação após criação é tratada em AppNavigation via LaunchedEffect
     Column(
         modifier = Modifier
             .fillMaxSize()

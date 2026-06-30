@@ -7,6 +7,7 @@ import com.example.workly.repository.ProfileRepository
 import com.example.workly.repository.ServiceRepository
 import com.example.workly.repository.UserRepository
 import com.example.workly.service.ChatService
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.dsl.module
 
@@ -14,6 +15,7 @@ val repositoryModule = module {
 
     // Firebase
     single { FirebaseFirestore.getInstance() }
+    single { FirebaseAuth.getInstance() }
 
     // Retrofit
     single { RetrofitClient.apiService }
@@ -22,7 +24,7 @@ val repositoryModule = module {
     single { ChatService(get()) }
 
     // Repositories
-    single { ServiceRepository() }
+    single { ServiceRepository(get(), get()) }
     single { ProfileRepository() }
     single { ApiRepository() }
     single { UserRepository() }

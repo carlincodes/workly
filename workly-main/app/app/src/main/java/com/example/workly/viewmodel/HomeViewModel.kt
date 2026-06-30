@@ -23,11 +23,6 @@ class HomeViewModel(
     val providerUiState: StateFlow<ProviderHomeUiState> =
         _providerUiState.asStateFlow()
 
-    init {
-        loadClientServices()
-        loadProviderServices()
-    }
-
     fun loadClientServices() {
         viewModelScope.launch {
 

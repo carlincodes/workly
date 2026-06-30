@@ -56,6 +56,10 @@ class ServiceViewModel(
         createService(service)
     }
 
+    fun resetCreateServiceState() {
+        _createServiceUiState.value = CreateServiceUiState()
+    }
+
     fun onEditClicked(service: ServiceItem) {
         _managementUiState.update { 
             it.copy(

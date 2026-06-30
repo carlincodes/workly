@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -89,6 +90,10 @@ fun AppNavigation() {
             val homeViewModel: HomeViewModel = koinViewModel()
             val uiState by homeViewModel.clientUiState.collectAsState()
 
+            LaunchedEffect(Unit) {
+                homeViewModel.loadClientServices()
+            }
+
             ClientHomeScreen(
                 navController = navController,
                 uiState = uiState,
@@ -100,6 +105,10 @@ fun AppNavigation() {
         composable("provider_home") {
             val homeViewModel: HomeViewModel = koinViewModel()
             val uiState by homeViewModel.providerUiState.collectAsState()
+
+            LaunchedEffect(Unit) {
+                homeViewModel.loadProviderServices()
+            }
 
             ProviderHomeScreen(
                 navController = navController,
@@ -124,6 +133,10 @@ fun AppNavigation() {
         composable("service_management") {
             val serviceViewModel: ServiceViewModel = koinViewModel()
             val uiState by serviceViewModel.managementUiState.collectAsState()
+
+            LaunchedEffect(Unit) {
+                serviceViewModel.loadUserServices()
+            }
 
             ServiceManagementScreen(
                 navController = navController,
@@ -155,8 +168,18 @@ fun AppNavigation() {
         }
 
         composable("create_service") {
-            val serviceViewModel: ServiceViewModel = koinViewModel()
+            val parentEntry = remember(navController.currentBackStackEntry) {
+                navController.getBackStackEntry("service_management")
+            }
+            val serviceViewModel: ServiceViewModel = koinViewModel(viewModelStoreOwner = parentEntry)
             val uiState by serviceViewModel.createServiceUiState.collectAsState()
+
+            LaunchedEffect(uiState.isServiceCreated) {
+                if (uiState.isServiceCreated) {
+                    navController.popBackStack()
+                    serviceViewModel.resetCreateServiceState()
+                }
+            }
 
             CreateServiceScreen(
                 navController = navController,
