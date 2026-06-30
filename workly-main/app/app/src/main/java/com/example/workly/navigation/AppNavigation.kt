@@ -2,9 +2,14 @@ package com.example.workly.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+
+import org.koin.androidx.compose.koinViewModel
+
 import com.example.workly.view.ApiServicesScreen
 import com.example.workly.view.ChatScreen
 import com.example.workly.view.ClientHomeScreen
@@ -18,9 +23,6 @@ import com.example.workly.view.ServiceManagementScreen
 import com.example.workly.view.ServiceDetailScreen
 import com.example.workly.view.SignupScreen
 
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.workly.viewmodel.AuthViewModel
 import com.example.workly.viewmodel.ChatViewModel
 import com.example.workly.viewmodel.HomeViewModel
@@ -39,7 +41,7 @@ fun AppNavigation() {
     ) {
 
         composable("login") {
-            val authViewModel: AuthViewModel = viewModel()
+            val authViewModel: AuthViewModel = koinViewModel()
             val uiState by authViewModel.uiState.collectAsState()
 
             LaunchedEffect(uiState.isSuccess) {
@@ -62,7 +64,7 @@ fun AppNavigation() {
         }
 
         composable("signup") {
-            val authViewModel: AuthViewModel = viewModel()
+            val authViewModel: AuthViewModel = koinViewModel()
             val uiState by authViewModel.uiState.collectAsState()
 
             LaunchedEffect(uiState.isSuccess) {
@@ -84,8 +86,9 @@ fun AppNavigation() {
         }
 
         composable("client_home") {
-            val homeViewModel: HomeViewModel = viewModel()
+            val homeViewModel: HomeViewModel = koinViewModel()
             val uiState by homeViewModel.clientUiState.collectAsState()
+
             ClientHomeScreen(
                 navController = navController,
                 uiState = uiState,
@@ -95,8 +98,9 @@ fun AppNavigation() {
         }
 
         composable("provider_home") {
-            val homeViewModel: HomeViewModel = viewModel()
+            val homeViewModel: HomeViewModel = koinViewModel()
             val uiState by homeViewModel.providerUiState.collectAsState()
+
             ProviderHomeScreen(
                 navController = navController,
                 uiState = uiState,
@@ -106,8 +110,9 @@ fun AppNavigation() {
         }
 
         composable("api_services") {
-            val serviceViewModel: ServiceViewModel = viewModel()
+            val serviceViewModel: ServiceViewModel = koinViewModel()
             val uiState by serviceViewModel.apiUiState.collectAsState()
+
             ApiServicesScreen(
                 navController = navController,
                 uiState = uiState,
@@ -117,8 +122,9 @@ fun AppNavigation() {
         }
 
         composable("service_management") {
-            val serviceViewModel: ServiceViewModel = viewModel()
+            val serviceViewModel: ServiceViewModel = koinViewModel()
             val uiState by serviceViewModel.managementUiState.collectAsState()
+
             ServiceManagementScreen(
                 navController = navController,
                 uiState = uiState,
@@ -133,6 +139,7 @@ fun AppNavigation() {
         }
 
         composable("service_detail/{role}/{category}/{title}?description={description}") { backStackEntry ->
+
             val role = backStackEntry.arguments?.getString("role")
             val category = backStackEntry.arguments?.getString("category")
             val title = backStackEntry.arguments?.getString("title")
@@ -148,8 +155,9 @@ fun AppNavigation() {
         }
 
         composable("create_service") {
-            val serviceViewModel: ServiceViewModel = viewModel()
+            val serviceViewModel: ServiceViewModel = koinViewModel()
             val uiState by serviceViewModel.createServiceUiState.collectAsState()
+
             CreateServiceScreen(
                 navController = navController,
                 uiState = uiState,
@@ -162,8 +170,9 @@ fun AppNavigation() {
         }
 
         composable("profile") {
-            val profileViewModel: ProfileViewModel = viewModel()
+            val profileViewModel: ProfileViewModel = koinViewModel()
             val uiState by profileViewModel.uiState.collectAsState()
+
             ProfileScreen(
                 navController = navController,
                 uiState = uiState,
@@ -174,8 +183,9 @@ fun AppNavigation() {
         }
 
         composable("client_profile") {
-            val profileViewModel: ProfileViewModel = viewModel()
+            val profileViewModel: ProfileViewModel = koinViewModel()
             val uiState by profileViewModel.uiState.collectAsState()
+
             ClientProfileScreen(
                 navController = navController,
                 uiState = uiState,
@@ -186,8 +196,9 @@ fun AppNavigation() {
         }
 
         composable("map") {
-            val mapViewModel: MapViewModel = viewModel()
+            val mapViewModel: MapViewModel = koinViewModel()
             val uiState by mapViewModel.uiState.collectAsState()
+
             MapScreen(
                 navController = navController,
                 uiState = uiState,
@@ -197,8 +208,9 @@ fun AppNavigation() {
         }
 
         composable("chat") {
-            val chatViewModel: ChatViewModel = viewModel()
+            val chatViewModel: ChatViewModel = koinViewModel()
             val uiState by chatViewModel.uiState.collectAsState()
+
             ChatScreen(
                 navController = navController,
                 uiState = uiState,

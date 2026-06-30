@@ -12,8 +12,9 @@ import com.example.workly.presentation.profile.ProfileUiState
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class ProfileViewModel : ViewModel() {
-    private val repository = ProfileRepository()
+class ProfileViewModel(
+    private val repository: ProfileRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()

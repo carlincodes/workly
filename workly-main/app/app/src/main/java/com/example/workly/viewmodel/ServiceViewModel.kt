@@ -14,9 +14,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class ServiceViewModel : ViewModel() {
-    private val repository = ServiceRepository()
-    private val apiRepository = ApiRepository()
+class ServiceViewModel(
+
+    private val repository: ServiceRepository,
+    private val apiRepository: ApiRepository
+) : ViewModel() {
 
     private val _createServiceUiState = MutableStateFlow(CreateServiceUiState())
     val createServiceUiState: StateFlow<CreateServiceUiState> = _createServiceUiState.asStateFlow()
